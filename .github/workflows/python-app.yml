@@ -1,39 +1,49 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-
-name: open-webui
+name: Open-WebUI with Ngrok
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
-
-permissions:
-  contents: read
+    branches:
+      - main
 
 jobs:
-  build:
-
+  run-open-webui:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.11.0"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install flake8 pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
-      run: |
-        pytest
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Python 3.11
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11.0'
+
+      # Step 3: Install any necessary dependencies for Open-WebUI
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install open-webui
+
+      # Step 4: Start the Open-WebUI server
+      - name: Start Open-WebUI server
+        run: |
+          open-webui serve &  # Replace with actual command to start Open-WebUI
+        env:
+          PORT: 8080
+
+      # Step 5: Install and configure ngrok
+      - name: Install and configure ngrok
+        run: |
+          wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
+          unzip ngrok-stable-linux-amd64.zip
+          ./ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+          nohup ./ngrok http 8080 &
+
+      # Step 6: Keep the job running to allow server access
+      - name: Keep workflow alive
+        run: sleep 1d
