@@ -1,4 +1,4 @@
-name: Open-WebUI with Ngrok
+name: Open-WebUI with Localhost.run
 
 on:
   push:
@@ -32,23 +32,20 @@ jobs:
       # Step 4: Start the Open-WebUI server
       - name: Start Open-WebUI server
         run: |
-          open-webui serve &
+          open-webui serve & 
         env:
           PORT: 8080
 
-      # Step 5: Install and configure ngrok
-      - name: Install and configure ngrok
+      # Step 5: Start localhost.run tunnel
+      - name: Start localhost.run tunnel
         run: |
-          wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
-          unzip ngrok-stable-linux-amd64.zip
-          ./ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
-          nohup ./ngrok http 8080 &
+          ssh -o StrictHostKeyChecking=no -R 80:localhost:8080 localhost.run &
+          sleep 5  # Give localhost.run time to start
 
-      # Step 6: Wait for ngrok to start and display the public URL
-      - name: Display ngrok URL
+      # Step 6: Display the public URL for localhost.run
+      - name: Display localhost.run URL
         run: |
-          sleep 5  # Give ngrok some time to start
-          curl --silent http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url'
+          ssh -o StrictHostKeyChecking=no -R 80:localhost:8080 localhost.run 2>&1 | grep -o 'https://.*'
 
       # Step 7: Keep the job running to allow server access
       - name: Keep workflow alive
